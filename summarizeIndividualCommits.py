@@ -10,15 +10,14 @@ model = OllamaLLM(model="llama3.2")
 
 # Create a chain to summarize each commit individually
 template = """
-Here is a list of commits that were recently merged into my GitHub repository: \n{commits}
+Here is a git commit that was recently merged into my GitHub repository: \nCommit message:\n{message}\n\nDiff:\n{diff}
 
-Can you briefly summarize the changes made in all of these commits?
+Can you briefly summarize the changes made in this commit?
 Please provide a concise summary that captures the essence of the changes, including any significant additions, deletions, or modifications to the codebase.
 Focus on the overall impact of the commit rather than specific line-by-line changes.
 """
 prompt = ChatPromptTemplate.from_template(template)
 chain = prompt | model
-
 
 load_dotenv()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
@@ -48,14 +47,14 @@ def get_commit_diff(owner, repo, sha):
     response.raise_for_status()
     return response.text
 
-def summarize_with_ollama(commits):
-    result = chain.invoke({"commits": commits})
+def summarize_individually_with_ollama(message, diff):
+    result = chain.invoke({"message": message, "diff": diff})
     return result
 
 def main():
     commits = get_last_commits(REPO_OWNER, REPO_NAME)
 
-    stringOfCommits = ""
+    arrOfSummaries = []
     for commit in commits:
         sha = commit["sha"]
         message = commit["commit"]["message"]
@@ -64,12 +63,16 @@ def main():
 
         try:
             diff = get_commit_diff(REPO_OWNER, REPO_NAME, sha)
-            stringOfCommits = stringOfCommits + f"Commit {sha[:7]} by {author} on {date}:\n{diff[:12000]}\n\n"
+            summary = summarize_individually_with_ollama(message, diff[:12000])
+            labeledSummary = f"Commit {sha[:7]} by {author} on {date}:\n{summary}"
+            arrOfSummaries.append(labeledSummary)
         except Exception as e:
             print(f"⚠️ Failed to process commit {sha[:7]}: {e}")
-
-    summary = summarize_with_ollama(stringOfCommits)
-    print(summary)
+    print("Summary of the last 10 commits:")
+    print("\n")
+    for summary in arrOfSummaries:
+        print(summary)
+        print("\n\n")
 
 if __name__ == "__main__":
     main()
