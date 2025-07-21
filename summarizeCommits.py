@@ -1,6 +1,7 @@
 from langchain_ollama.llms import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
 import requests
+import datetime
 import os
 from dotenv import load_dotenv
 import subprocess
@@ -22,6 +23,8 @@ chain = prompt | model
 
 load_dotenv()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+REPO_OWNER = os.getenv("REPO_OWNER")
+REPO_NAME = os.getenv("REPO_NAME")
 
 GITHUB_HEADERS = {
     "Authorization": f"token {GITHUB_TOKEN}",
@@ -30,12 +33,10 @@ GITHUB_HEADERS = {
 
 OLLAMA_MODEL = "llama3"  # or mistral, phi3, etc.
 
-REPO_OWNER = "Nurquhart"
-REPO_NAME = "GithubCommitSummary"
-
-def get_last_commits(owner, repo, count=10):
+def get_last_commits(owner, repo):
+    since = (datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=24)).isoformat() + "Z"
     url = f"https://api.github.com/repos/{owner}/{repo}/commits"
-    params = {"per_page": count}
+    params = {"since": since, "per_page": 100}
     response = requests.get(url, headers=GITHUB_HEADERS, params=params)
     response.raise_for_status()
     return response.json()
