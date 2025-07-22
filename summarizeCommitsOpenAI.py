@@ -37,7 +37,8 @@ def summarize_with_llm(commits):
     Here are the commits:
     {commits}
 
-    Please write a concise summary of the changes made in these commits.
+    Please start by writing a concise summary of all of the changes that have occured.
+    Then follow up by listing each commit separately and giving a bullet or two description of what happened in the commit.
     """
 
     url = "https://api.openai.com/v1/responses"
